@@ -1,10 +1,13 @@
 package lottery;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class LotteryPick {
 	
@@ -12,19 +15,19 @@ public class LotteryPick {
 	// Integer is for pick number, String is team, Double is weight (probability)
 	// http://www.tankathon.com/pick_odds
 	
-	private Map<String, Integer> teams;
+	private Map<String, List<Double>> teams;
 	private int draftYear;
 	
-	public LotteryPick(Map<String, Integer> teams, int draftYear) {
+	public LotteryPick (Map<String, List<Double>> teams, int draftYear) {
 		this.teams = teams;
 		this.draftYear = draftYear;
 	}
 	
-	public Map<String, Integer> getTeams() {
+	public Map<String, List<Double>> getTeams() {
 		return teams;
 	}
 	
-	public void setTeams(Map<String, Integer> teams) {
+	public void setTeams(Map<String, List<Double>> teams) {
 		this.teams = teams;
 	}
 	
@@ -37,16 +40,26 @@ public class LotteryPick {
 	}
 	
 	private boolean validOdds() {
-		Collection<Integer> chances = this.teams.values();
+		
+		// don't use this.team.values; it returns a collection
+		
+		boolean flag;
+		
+		this.teams.forEach((k, v) -> {
+			List<Double> totList = this.teams.get(k);
+			if (totList.stream().reduce(0.0, (a, b) -> (a + b)) == 100.0) {
+				flag = true;
+			} else {
+				flag = false;
+			}
+		});
 		// add horizontal sum of values; both should equal 100
 		
-		if (chances.stream().reduce(0, (a,b) -> a + b) == 100) {
-			return true;
-		}
-		return false;
+		
+		return flag;
 	}
 	
-	public Map<String, Integer> lotteryPickCalculator() throws IllegalArgumentException {
+	public Map<String, List<Double>> lotteryPickCalculator() throws IllegalArgumentException {
 		Random random = new Random();
 		
 		if (!this.validOdds()) {
