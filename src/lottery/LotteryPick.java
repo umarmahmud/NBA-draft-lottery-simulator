@@ -4,30 +4,30 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
+import org.apache.commons.math3.distribution.*;
+import org.apache.commons.math3.util.*;
 
 public class LotteryPick {
-	
-	// need new DS - Map<Integer, Map<String, Double>> draft;
-	// Integer is for pick number, String is team, Double is weight (probability)
 	// http://www.tankathon.com/pick_odds
 	
-	private Map<String, List<Double>> teams;
+	// key in pair represents pick number, value represents odds of getting that pick
+	private Map<String, List<Pair<Integer, Double>>> teams;
 	private int draftYear;
 	
-	public LotteryPick (Map<String, List<Double>> teams, int draftYear) {
+	public LotteryPick (Map<String, List<Pair<Integer, Double>>> teams, int draftYear) {
 		this.teams = teams;
 		this.draftYear = draftYear;
 	}
 	
-	public Map<String, List<Double>> getTeams() {
+	public Map<String, List<Pair<Integer, Double>>> getTeams() {
 		return teams;
 	}
 	
-	public void setTeams(Map<String, List<Double>> teams) {
+	public void setTeams(Map<String, List<Pair<Integer, Double>>> teams) {
 		this.teams = teams;
 	}
 	
@@ -39,38 +39,49 @@ public class LotteryPick {
 		this.draftYear = draftYear;
 	}
 	
-	private boolean validOdds() {
+	private boolean validProbabilityDistribution() {
+		boolean flag = true;
 		
-		// don't use this.team.values; it returns a collection
-		
-		boolean flag;
-		
-		this.teams.forEach((k, v) -> {
-			List<Double> totList = this.teams.get(k);
-			if (totList.stream().reduce(0.0, (a, b) -> (a + b)) == 100.0) {
+		for (Map.Entry<String, List<Pair<Integer, Double>>> entry : this.teams.entrySet()) {
+			if (flag = false) {
+				break;
+			}
+			List<Pair<Integer, Double>> vals = entry.getValue();
+			Double sum = 0.00;
+			for (int i = 0; i < vals.size(); i++) {
+				double probability = vals.get(i).getValue();
+				if (vals.get(i).getValue() == null) {
+					// deal w/ null values here
+				}
+				sum += probability;
+			}
+			// System.out.println(sum);
+			if (sum.equals(1.0)) {
 				flag = true;
 			} else {
 				flag = false;
+				break;
+				}
 			}
-		});
-		// add horizontal sum of values; both should equal 100
-		
 		
 		return flag;
 	}
 	
-	public Map<String, List<Double>> lotteryPickCalculator() throws IllegalArgumentException {
-		Random random = new Random();
+	public Map<String, Integer> lotteryPickCalculator() throws IllegalArgumentException {
+		Map<String, Integer> finalResult = new HashMap<>();
 		
-		if (!this.validOdds()) {
+		if (!this.validProbabilityDistribution()) {
 			throw new IllegalArgumentException();
 		}
 		
 		// use EnumeratedDistribution
-		this.teams.forEach((k, v) -> {
-			this.teams.put(k, random.nextInt(14));
-		});
-		return this.teams;
+		for (Map.Entry<String, List<Pair<Integer, Double>>> entry : this.teams.entrySet()) {
+			EnumeratedDistribution<Integer> enumDist = new EnumeratedDistribution<>(entry.getValue());
+			Integer pickNumber = enumDist.sample();
+			finalResult.put(entry.getKey(), pickNumber);
+		}
+		
+		return finalResult;
 	}
 }
 
